@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Iowa Population Density Animation</title>
+    <style>
+        .county {
+            stroke: #fff;
+            stroke-width: 0.5px;
+        }
+        .legend {
+            font-family: sans-serif;
+            font-size: 12px;
+        }
+        .year {
+            font-family: sans-serif;
+            font-size: 24px;
+            fill: #000;
+        }
+    </style>
+    <script src="https://d3js.org/d3.v6.min.js"></script>
+</head>
+<body>
+    <div id="map" style="display: flex; justify-content: center;"></div>
+    <script>
+        const width = 1200;
+        const height = 800;
+
+        const svg = d3.select("#map").append("svg")
+            .attr("width", width)
+            .attr("height", height);
+
+        const projection = d3.geoMercator()
+            .scale(6000) // Adjust scale as needed
+            .center([-93.5, 42.0]) // Center on Iowa
+            .translate([width / 2, height / 2]);
+
+        const path = d3.geoPath().projection(projection);
+
+        Promise.all([
+            d3.json("iowa-with-county-boundaries_1095.geojson"),
+            d3.csv("iowa_popdensity.csv")
+        ]).then(([geoData, popData]) => {
+            console.log("GeoJSON Data:", geoData);
+            console.log("CSV Data:", popData);
+
+            const dataByYear = d3.groups(popData, d => d.year);
+            const years = dataByYear.map(d => d[0]);
+
+            const color = d3.scaleQuantile()
+                .domain(popData.map(d => +d.rate))
+                .range(d3.schemeReds[5]);
+
+            const legend = svg.append("g")
+                .attr("class", "legend")
+                .attr("transform", "translate(20,20)");
+
+            legend.selectAll("rect")
+                .data(color.range())
+                .enter().append("rect")
+                .attr("x", (d, i) => i * 40)
+                .attr("width", 40)
+                .attr("height", 20)
+                .attr("fill", d => d);
+
+            legend.selectAll("text")
+                .data(color.range())
+                .enter().append("text")
+                .attr("x", (d, i) => i * 40 + 20)
+                .attr("y", 35)
+                .attr("dy", ".35em")
+                .attr("text-anchor", "middle")
+                .text((d, i) => Math.round(color.invertExtent(d)[0]));
+
+            legend.append("text")
+                .attr("x", 0)
+                .attr("y", -10)
+                .attr("class", "caption")
+                .attr("text-anchor", "start")
+                .attr("font-weight", "bold")
+                .text("Population per 10 mile");
+
+            // Add this part to display the year
+            const yearText = svg.append("text")
+                .attr("class", "year")
+                .attr("x", width / 2)
+                .attr("y", height - 30)
+                .attr("text-anchor", "middle")
+                .style("font-size", "24px")
+                .style("fill", "#000");
+
+            const updateMap = (year) => {
+                const yearData = new Map(dataByYear.find(d => d[0] === year)[1].map(d => [d.id, +d.rate]));
+                console.log("Year Data:", year, yearData);
+
+                svg.selectAll(".county")
+                    .data(geoData.features)
+                    .join("path")
+                    .attr("class", "county")
+                    .attr("d", path)
+                    .attr("fill", d => {
+                        const rate = yearData.get(d.id);
+                        console.log("ID:", d.id, "Rate:", rate);
+                        return color(rate || 0);
+                    });
+
+                // Update year text
+                yearText.text(year);
+            };
+
+            let currentYearIndex = 0;
+
+            const animateMap = () => {
+                updateMap(years[currentYearIndex]);
+                currentYearIndex = (currentYearIndex + 1) % years.length;
+                setTimeout(animateMap, 1000);
+            };
+
+            // Sort years to ensure animation starts from 1850 to 2020
+            years.sort((a, b) => a - b);
+            animateMap();
+        }).catch(error => {
+            console.error("Error loading or parsing data:", error);
+        });
+    </script>
+</body>
+</html>
