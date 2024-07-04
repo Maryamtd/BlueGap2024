@@ -11,12 +11,12 @@
         }
         .legend {
             font-family: sans-serif;
-            font-size: 12px;
+            font-size: 16px;
         }
         .year {
             font-family: sans-serif;
             font-size: 24px;
-            fill: #000000;
+            fill: #7a0177;
         }
         .streams {
             fill: none;
@@ -30,7 +30,7 @@
             border: 1px solid #ccc;
             border-radius: 3px;
             pointer-events: none;
-            font-size: 12px;
+            font-size: 16px;
         }
         .tooltip-county {
             background-color: #f9f9f9; 
@@ -65,7 +65,7 @@
 
         Promise.all([
             d3.json("iowa-with-county-boundaries_1095.geojson"),
-            d3.csv("iowa_popdensity.csv"),
+            d3.csv("iowa_popdensity.csv", d => ({ ...d, rate: +d.rate })), // Ensure rate is a number
             d3.json("major_streams2.json")
         ]).then(([geoData, popData, streamsData]) => {
             console.log("GeoJSON Data:", geoData);
@@ -82,41 +82,71 @@
 
             const legend = svg.append("g")
                 .attr("class", "legend")
-                .attr("transform", "translate(20,20)");
+                .attr("transform", "translate(20,550)");
 
             legend.selectAll("rect")
-                .data(color.range())
+                .data(Colors)
                 .enter().append("rect")
-                .attr("x", (d, i) => i * 40)
-                .attr("width", 40)
+                .attr("x", 0)
+                .attr("y", (d, i) => i * 30)
+                .attr("width", 20)
                 .attr("height", 20)
                 .attr("fill", d => d);
 
-            legend.selectAll("text")
-                .data(color.range())
-                .enter().append("text")
-                .attr("x", (d, i) => i * 40 + 20)
-                .attr("y", 35)
+            // Manually add text labels
+            legend.append("text")
+                .attr("x", 30)
+                .attr("y", 10)
                 .attr("dy", ".35em")
-                .attr("text-anchor", "middle")
-                .text((d, i) => Math.round(color.invertExtent(d)[0]));
+                .attr("text-anchor", "start")
+                .text("0 to 10");
 
+            legend.append("text")
+                .attr("x", 30)
+                .attr("y", 40)
+                .attr("dy", ".35em")
+                .attr("text-anchor", "start")
+                .text("10 to 14");
+
+            legend.append("text")
+                .attr("x", 30)
+                .attr("y", 70)
+                .attr("dy", ".35em")
+                .attr("text-anchor", "start")
+                .text("14 to 18");
+
+            legend.append("text")
+                .attr("x", 30)
+                .attr("y", 100)
+                .attr("dy", ".35em")
+                .attr("text-anchor", "start")
+                .text("18 to 25");
+
+            legend.append("text")
+                .attr("x", 30)
+                .attr("y", 130)
+                .attr("dy", ".35em")
+                .attr("text-anchor", "start")
+                .text("25 and up");
+
+            
             legend.append("text")
                 .attr("x", 0)
                 .attr("y", -10)
                 .attr("class", "caption")
                 .attr("text-anchor", "start")
                 .attr("font-weight", "bold")
-                .text("Population per 10 mile");
+                .text("Population per sq. mile");
 
             // Add this part to display the year
             const yearText = svg.append("text")
                 .attr("class", "year")
                 .attr("x", width / 2)
-                .attr("y", height - 30)
+                .attr("y", 60)
                 .attr("text-anchor", "middle")
-                .style("font-size", "34px")
-                .style("fill", "#000");
+                .style("font-size", "54px")
+                .style("font-weight", "bold")
+                .style("fill", "#7a0177");
 
             const updateMap = (year) => {
                 const yearData = new Map(dataByYear.find(d => d[0] === year)[1].map(d => [d.id, +d.rate]));
