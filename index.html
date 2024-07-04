@@ -11,17 +11,17 @@
         }
         .legend {
             font-family: sans-serif;
-            font-size: 16px;
+            font-size: 18px;
         }
         .year {
             font-family: sans-serif;
-            font-size: 24px;
+            font-size: 26px;
             fill: #7a0177;
         }
         .streams {
             fill: none;
             stroke: #327faa;
-            stroke-width: 2px;
+            stroke-width: 4px;
         }
         .tooltip {
             position: absolute;
@@ -30,7 +30,7 @@
             border: 1px solid #ccc;
             border-radius: 3px;
             pointer-events: none;
-            font-size: 16px;
+            font-size: 18px;
         }
         .tooltip-county {
             background-color: #f9f9f9; 
@@ -66,8 +66,14 @@
         Promise.all([
             d3.json("iowa-with-county-boundaries_1095.geojson"),
             d3.csv("iowa_popdensity.csv", d => ({ ...d, rate: +d.rate })), // Ensure rate is a number
-            d3.json("major_streams2.json")
-        ]).then(([geoData, popData, streamsData]) => {
+            d3.json("major_streams2.json"),
+            d3.json("RR1855_IA.json"), 
+            d3.json("RR1861_IA.json"), 
+            d3.json("RR1870_IA.json"), 
+            d3.json("RR1911_IA.json"), 
+            d3.json("RR2020_IA.json"), 
+            d3.json("PrimaryRoads_IA.json")
+        ]).then(([geoData, popData, streamsData, rr1855, rr1861, rr1870, rr1911, rr2020, primaryRoads]) => {
             console.log("GeoJSON Data:", geoData);
             console.log("CSV Data:", popData);
             console.log("Streams GeoJSON Data:", streamsData);
@@ -75,14 +81,15 @@
             const dataByYear = d3.groups(popData, d => d.year);
             const years = dataByYear.map(d => d[0]);
 
-            const Colors = ["#edf8fb", "#b3cde3", "#8c96c6", "#8856a7", "#810f7c"];
+            //const Colors = ["#edf8fb", "#b3cde3", "#9ebcda", "#8c96c6", "#8856a7"];
+            const Colors = ["#dbb95f", "#878532", "#537636", "#7f5f16", "#422e13"];
             const color = d3.scaleQuantile()
                 .domain(popData.map(d => +d.rate))
                 .range(Colors);
 
             const legend = svg.append("g")
                 .attr("class", "legend")
-                .attr("transform", "translate(20,550)");
+                .attr("transform", "translate(10,550)");
 
             legend.selectAll("rect")
                 .data(Colors)
@@ -146,7 +153,7 @@
                 .attr("text-anchor", "middle")
                 .style("font-size", "54px")
                 .style("font-weight", "bold")
-                .style("fill", "#7a0177");
+                .style("fill", "#7f5f16");
 
             const updateMap = (year) => {
                 const yearData = new Map(dataByYear.find(d => d[0] === year)[1].map(d => [d.id, +d.rate]));
@@ -175,11 +182,86 @@
 
                 // Update year text
                 yearText.text(year);
+
+                // Clear existing railroad layers
+                //svg.selectAll(".railroad").remove();
+
+                // Add corresponding railroad layers based on the year
+                if (year >= 1860 && year < 1870) {
+                    svg.append("g")
+                        .selectAll("path")
+                        .data(rr1855.features)
+                        .enter().append("path")
+                        .attr("d", path)
+                        .attr("class", "railroad")
+                        .attr("fill", "none")
+                        .attr("stroke", "black")
+                        .attr("stroke-width", 2.5)
+                        .attr("stroke-dasharray", "5,5");
+                } else if (year >= 1870 && year < 1880) {
+                    svg.append("g")
+                        .selectAll("path")
+                        .data(rr1861.features)
+                        .enter().append("path")
+                        .attr("d", path)
+                        .attr("class", "railroad")
+                        .attr("fill", "none")
+                        .attr("stroke", "black")
+                        .attr("stroke-width", 2.5)
+                        .attr("stroke-dasharray", "5,5");
+                } else if (year >= 1880 && year < 1910) {
+                    svg.append("g")
+                        .selectAll("path")
+                        .data(rr1870.features)
+                        .enter().append("path")
+                        .attr("d", path)
+                        .attr("class", "railroad")
+                        .attr("fill", "none")
+                        .attr("stroke", "black")
+                        .attr("stroke-width", 2.5)
+                        .attr("stroke-dasharray", "5,5");
+                } else if (year >= 1910 && year < 1960) {
+                    svg.append("g")
+                        .selectAll("path")
+                        .data(rr1911.features)
+                        .enter().append("path")
+                        .attr("d", path)
+                        .attr("class", "railroad")
+                        .attr("fill", "none")
+                        .attr("stroke", "black")
+                        .attr("stroke-width", 2.5)
+                        .attr("stroke-dasharray", "5,5");
+                } else if (year >= 1960 && year < 2000) {
+                    svg.append("g")
+                        .selectAll("path")
+                        .data(rr2020.features)
+                        .enter().append("path")
+                        .attr("d", path)
+                        .attr("class", "railroad")
+                        .attr("fill", "none")
+                        .attr("stroke", "black")
+                        .attr("stroke-width", 2.5)
+                        .attr("stroke-dasharray", "5,5");
+                } else if (year >= 2000) {
+                    svg.append("g")
+                        .selectAll("path")
+                        .data(primaryRoads.features)
+                        .enter().append("path")
+                        .attr("d", path)
+                        .attr("class", "railroad")
+                        .attr("fill", "none")
+                        .attr("stroke", "black")
+                        .attr("stroke-width", 2.5);
+                }
             };
 
             let currentYearIndex = 0;
 
             const animateMap = () => {
+                if (currentYearIndex === 0) {
+                    // Clear railroad layers at the start of each animation cycle
+                    svg.selectAll(".railroad").remove();
+                }
                 updateMap(years[currentYearIndex]);
                 currentYearIndex = (currentYearIndex + 1) % years.length;
                 setTimeout(animateMap, 2000);
