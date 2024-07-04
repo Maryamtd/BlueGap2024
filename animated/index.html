@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Iowa Population Density Animation</title>
+    <title>Iowa Population Density (1850-2020)</title>
     <style>
         .county {
-            stroke: #fff;
-            stroke-width: 0.5px;
+            stroke: #aaa8a892;
+            stroke-width: 0.3px;
         }
         .legend {
             font-family: sans-serif;
@@ -16,13 +16,36 @@
         .year {
             font-family: sans-serif;
             font-size: 24px;
-            fill: #000;
+            fill: #000000;
+        }
+        .streams {
+            fill: none;
+            stroke: #327faa;
+            stroke-width: 2px;
+        }
+        .tooltip {
+            position: absolute;
+            background-color: white;
+            padding: 5px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            pointer-events: none;
+            font-size: 12px;
+        }
+        .tooltip-county {
+            background-color: #f9f9f9; 
+            color: #333; 
+        }
+        .tooltip-stream {
+            background-color: #e0f7fa; 
+            color: #00796b; 
         }
     </style>
     <script src="https://d3js.org/d3.v6.min.js"></script>
 </head>
 <body>
     <div id="map" style="display: flex; justify-content: center;"></div>
+    <div id="tooltip" class="tooltip" style="opacity: 0;"></div> <!-- Tooltip div -->
     <script>
         const width = 1200;
         const height = 800;
@@ -32,25 +55,30 @@
             .attr("height", height);
 
         const projection = d3.geoMercator()
-            .scale(6000) // Adjust scale as needed
+            .scale(9000) 
             .center([-93.5, 42.0]) // Center on Iowa
             .translate([width / 2, height / 2]);
 
         const path = d3.geoPath().projection(projection);
 
+        const tooltip = d3.select("#tooltip"); //hover over rivers
+
         Promise.all([
             d3.json("iowa-with-county-boundaries_1095.geojson"),
-            d3.csv("iowa_popdensity.csv")
-        ]).then(([geoData, popData]) => {
+            d3.csv("iowa_popdensity.csv"),
+            d3.json("major_streams2.json")
+        ]).then(([geoData, popData, streamsData]) => {
             console.log("GeoJSON Data:", geoData);
             console.log("CSV Data:", popData);
+            console.log("Streams GeoJSON Data:", streamsData);
 
             const dataByYear = d3.groups(popData, d => d.year);
             const years = dataByYear.map(d => d[0]);
 
+            const Colors = ["#edf8fb", "#b3cde3", "#8c96c6", "#8856a7", "#810f7c"];
             const color = d3.scaleQuantile()
                 .domain(popData.map(d => +d.rate))
-                .range(d3.schemeReds[5]);
+                .range(Colors);
 
             const legend = svg.append("g")
                 .attr("class", "legend")
@@ -87,7 +115,7 @@
                 .attr("x", width / 2)
                 .attr("y", height - 30)
                 .attr("text-anchor", "middle")
-                .style("font-size", "24px")
+                .style("font-size", "34px")
                 .style("fill", "#000");
 
             const updateMap = (year) => {
@@ -103,7 +131,17 @@
                         const rate = yearData.get(d.id);
                         console.log("ID:", d.id, "Rate:", rate);
                         return color(rate || 0);
-                    });
+                    })
+                    .on("mouseover", (event, d) => {
+                        tooltip.attr("class", "tooltip tooltip-county")
+                        .transition().duration(200).style("opacity", .9);
+                        tooltip.html(d.properties.name) 
+                            .style("left", (event.pageX + 5) + "px")
+                            .style("top", (event.pageY - 28) + "px");
+        })
+        .on("mouseout", () => {
+            tooltip.transition().duration(500).style("opacity", 0);
+        });
 
                 // Update year text
                 yearText.text(year);
@@ -114,12 +152,29 @@
             const animateMap = () => {
                 updateMap(years[currentYearIndex]);
                 currentYearIndex = (currentYearIndex + 1) % years.length;
-                setTimeout(animateMap, 1000);
+                setTimeout(animateMap, 2000);
             };
 
             // Sort years to ensure animation starts from 1850 to 2020
             years.sort((a, b) => a - b);
             animateMap();
+
+            // <<<< Flagged part - Add major streams layer with tooltip
+            svg.append("g")
+                .selectAll("path")
+                .data(streamsData.features)
+                .enter().append("path")
+                .attr("d", path)
+                .attr("class", "streams")
+                .on("mouseover", (event, d) => {
+                    tooltip.attr("class", "tooltip tooltip-stream").transition().duration(200).style("opacity", 0.9);
+                    tooltip.html(d.properties.Name)
+                        .style("left", (event.pageX + 5) + "px")
+                        .style("top", (event.pageY - 28) + "px");
+                })
+                .on("mouseout", () => {
+                    tooltip.transition().duration(500).style("opacity", 0);
+                });
         }).catch(error => {
             console.error("Error loading or parsing data:", error);
         });
