@@ -82,7 +82,7 @@
             const years = dataByYear.map(d => d[0]);
 
             //const Colors = ["#edf8fb", "#b3cde3", "#9ebcda", "#8c96c6", "#8856a7"];
-            const Colors = ["#dbb95f", "#878532", "#537636", "#7f5f16", "#422e13"];
+            const Colors = ["#feebe2", "#fbb4b9", "#f768a1", "#c51b8a", "#7a0177"];
             const color = d3.scaleQuantile()
                 .domain(popData.map(d => +d.rate))
                 .range(Colors);
@@ -144,6 +144,57 @@
                 .attr("text-anchor", "start")
                 .attr("font-weight", "bold")
                 .text("Population per sq. mile");
+            
+            // Legend for rivers, railroads, and main roads
+            const lineLegend = svg.append("g")
+                .attr("class", "legend")
+                .attr("transform", "translate(20,450)");
+
+            lineLegend.append("line")
+                .attr("x1", 0)
+                .attr("y1", 0)
+                .attr("x2", 30)
+                .attr("y2", 0)
+                .attr("stroke", "#327faa")
+                .attr("stroke-width", 2);
+
+            lineLegend.append("text")
+                .attr("x", 40)
+                .attr("y", 5)
+                .attr("dy", ".35em")
+                .attr("text-anchor", "start")
+                .text("Rivers");
+
+            lineLegend.append("line")
+                .attr("x1", 0)
+                .attr("y1", 20)
+                .attr("x2", 30)
+                .attr("y2", 20)
+                .attr("stroke", "#000")
+                .attr("stroke-width", 2)
+                .attr("stroke-dasharray", "5,5");
+
+            lineLegend.append("text")
+                .attr("x", 40)
+                .attr("y", 25)
+                .attr("dy", ".35em")
+                .attr("text-anchor", "start")
+                .text("Railroads");
+
+            lineLegend.append("line")
+                .attr("x1", 0)
+                .attr("y1", 40)
+                .attr("x2", 30)
+                .attr("y2", 40)
+                .attr("stroke", "black")
+                .attr("stroke-width", 2);
+
+            lineLegend.append("text")
+                .attr("x", 40)
+                .attr("y", 45)
+                .attr("dy", ".35em")
+                .attr("text-anchor", "start")
+                .text("Main Roads");
 
             // Add this part to display the year
             const yearText = svg.append("text")
@@ -153,7 +204,7 @@
                 .attr("text-anchor", "middle")
                 .style("font-size", "54px")
                 .style("font-weight", "bold")
-                .style("fill", "#7f5f16");
+                .style("fill", "#7a0177");
 
             const updateMap = (year) => {
                 const yearData = new Map(dataByYear.find(d => d[0] === year)[1].map(d => [d.id, +d.rate]));
