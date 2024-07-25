@@ -65,7 +65,7 @@
 
         Promise.all([
             d3.json("iowa-with-county-boundaries_1095.geojson"),
-            d3.csv("iowa_popdensity.csv", d => ({ ...d, rate: +d.rate })), // Ensure rate is a number
+            d3.csv("iowa_popdensity.csv", d => ({ ...d, rate: +d.rate })), 
             d3.json("major_streams2.json"),
             d3.json("RR1855_IA.json"), 
             d3.json("RR1861_IA.json"), 
@@ -196,7 +196,7 @@
                 .attr("text-anchor", "start")
                 .text("Main Roads");
 
-            // Add this part to display the year
+            // display the year
             const yearText = svg.append("text")
                 .attr("class", "year")
                 .attr("x", width / 2)
@@ -322,7 +322,7 @@
             years.sort((a, b) => a - b);
             animateMap();
 
-            // <<<< Flagged part - Add major streams layer with tooltip
+            // Add major streams layer with tooltip
             svg.append("g")
                 .selectAll("path")
                 .data(streamsData.features)
